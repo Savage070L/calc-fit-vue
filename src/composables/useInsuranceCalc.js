@@ -66,7 +66,7 @@ export function validateInputs(inputs) {
     annuityTerm,
     guaranteedPeriod,
   } = inputs;
-  const { minTerm, maxTerm, maxExitAge } = PRODUCT_CONFIG;
+  const { minTerm, maxTerm, maxExitAge, minAge } = PRODUCT_CONFIG;
 
   if (!dob) {
     errors.push(t('errors.dobRequired'));
@@ -74,6 +74,8 @@ export function validateInputs(inputs) {
     const age = PolicyCalculator.calculateAge(dob);
     if (age < 0) {
       errors.push(t('errors.dobInvalid'));
+    } else if (minAge && age < minAge) {
+      errors.push(t('errors.minAge', { age, min: minAge }));
     } else if (age + minTerm > maxExitAge) {
       // На конец минимального срока возраст превысит maxExitAge — оформление невозможно
       errors.push(t('errors.ageTooHigh', { age, maxAge: maxExitAge - minTerm, max: maxExitAge }));
