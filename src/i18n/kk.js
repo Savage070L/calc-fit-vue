@@ -137,10 +137,19 @@ export default {
     frequencyRequired: 'Периодтылығын көрсетіңіз',
     sumAssuredRequired: 'Сақтандыру сомасын 0-ден үлкен етіп көрсетіңіз',
     premiumRequired: 'Сыйлықақыны 0-ден үлкен етіп көрсетіңіз',
+    minPremium: '«{frequency}» төлеу үшін ең аз жарна — {min}',
     annuityFrequencyRequired: 'Аннуитеттік төлемдердің периодтылығын көрсетіңіз',
     annuityTermRequired: 'Аннуитеттік төлем мерзімін (0-ден үлкен) көрсетіңіз',
     guaranteedPeriodRequired: 'Кепілдік берілген кезеңді (0 немесе одан көп) көрсетіңіз',
     guaranteedPeriodMax: 'Кепілдік кезең аннуитет мерзімінен аспауы керек',
+  },
+
+  frequency: {
+    annual: 'жылына бір рет',
+    semiannual: 'жарты жылда бір рет',
+    quarterly: 'тоқсан сайын',
+    monthly: 'ай сайын',
+    single: 'біржолғы',
   },
 
   tips: {

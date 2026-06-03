@@ -137,10 +137,19 @@ export default {
     frequencyRequired: 'Укажите периодичность',
     sumAssuredRequired: 'Укажите страховую сумму больше 0',
     premiumRequired: 'Укажите премию больше 0',
+    minPremium: 'Минимальный взнос для оплаты «{frequency}» — {min}',
     annuityFrequencyRequired: 'Укажите периодичность аннуитетных выплат',
     annuityTermRequired: 'Укажите срок аннуитетных выплат (больше 0)',
     guaranteedPeriodRequired: 'Укажите гарантированный период (0 или больше)',
     guaranteedPeriodMax: 'Гарантированный период не может быть больше срока аннуитетных выплат',
+  },
+
+  frequency: {
+    annual: 'раз в год',
+    semiannual: 'раз в полгода',
+    quarterly: 'раз в квартал',
+    monthly: 'ежемесячно',
+    single: 'единовременно',
   },
 
   tips: {

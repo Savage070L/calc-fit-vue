@@ -66,7 +66,7 @@ export function validateInputs(inputs) {
     annuityTerm,
     guaranteedPeriod,
   } = inputs;
-  const { minTerm, maxTerm, maxExitAge, minAge } = PRODUCT_CONFIG;
+  const { minTerm, maxTerm, maxExitAge, minAge, minPremium } = PRODUCT_CONFIG;
 
   if (!dob) {
     errors.push(t('errors.dobRequired'));
@@ -104,6 +104,17 @@ export function validateInputs(inputs) {
     }
   } else if (!premium || premium <= 0) {
     errors.push(t('errors.premiumRequired'));
+  }
+
+  // Минимальный взнос по периодичности — только в режиме premium_to_sa
+  if (mode === 'premium_to_sa' && frequency && frequency !== 'single') {
+    const min = minPremium?.[frequency] ?? 0;
+    if (min > 0 && premium && premium < min) {
+      errors.push(t('errors.minPremium', {
+        frequency: t(`frequency.${frequency}`),
+        min: formatMoney(min, '₸'),
+      }));
+    }
   }
 
   if (enableAnnuity) {
