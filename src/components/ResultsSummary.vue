@@ -1,14 +1,12 @@
 <template>
   <div class="results-summary" v-if="result">
     <div class="result-section-header" aria-hidden="true">
-      <span class="rsh-icon-wrap">
+      <span class="rsh-line" />
+      <span class="rsh-chip">
         <span class="rsh-icon">📊</span>
-      </span>
-      <div class="rsh-content">
-        <span class="rsh-arrow rsh-arrow-left">▼</span>
         <span class="rsh-text">{{ t('results.sectionHeader') }}</span>
-        <span class="rsh-arrow rsh-arrow-right">▼</span>
-      </div>
+      </span>
+      <span class="rsh-line" />
     </div>
 
     <div class="top-badges" :class="{ 'has-annuity': result.annuityPayment > 0 }">
@@ -51,6 +49,14 @@
           <span class="total-sum">{{ fmtRiderSum(row.key, animatedRiders[row.key]?.sum ?? row.sum) }}</span>
           <span class="total-value">{{ fmtP(animatedRiders[row.key]?.premium ?? row.premium) }}</span>
         </div>
+      </div>
+    </div>
+
+    <!-- ── СС с учётом индексации (такой же бейдж, как сверху, на всю ширину) ── -->
+    <div v-if="hasIndexation" class="top-badges idx-badges">
+      <div class="summary-badge badge-sa">
+        <span class="badge-label" v-fit-text="{ min: 9, max: 15 }">{{ t('results.sumAssuredIdx') }} <InfoTooltip v-bind="tip('sumAssuredIdx')" /></span>
+        <span class="badge-value" v-fit-text="idxBadgeFitOpts">{{ fmtTopValue(animated.idxSumAssured) }}</span>
       </div>
     </div>
   </div>
@@ -104,7 +110,7 @@ const FREQ_LABELS = computed(() => dict.value.form.freq);
 const ANNUITY_FREQ_LABELS = computed(() => dict.value.form.annuityFreq);
 const RIDER_LABELS = computed(() => dict.value.results.riderLabels);
 
-const animated = reactive({ sumAssured: 0, grossPremium: 0, totalPremium: 0, annuityPayment: 0 });
+const animated = reactive({ sumAssured: 0, grossPremium: 0, totalPremium: 0, annuityPayment: 0, idxSumAssured: 0 });
 const animatedRiders = reactive({});
 
 const annuityFreqLabel = computed(() => ANNUITY_FREQ_LABELS.value[props.result?.annuity?.annuityFrequency] ?? ANNUITY_FREQ_LABELS.value.annual);
@@ -126,6 +132,17 @@ const coverageRows = computed(() =>
     .filter(([n, r]) => RIDER_LABELS.value[n] && (r?.riderPremium ?? 0) > 0)
     .map(([n, r]) => ({ key: n, label: RIDER_LABELS.value[n], sum: r.riderSum ?? 0, premium: r.riderPremium ?? 0 }))
 );
+
+// ── СС с учётом индексации (= колонке СС строки «Итого» таблицы индексации) ──
+const idxRows = computed(() => props.result?.indexationSchedule ?? []);
+const hasIndexation = computed(() =>
+  (props.result?.enableIndexation ?? false) && idxRows.value.length > 0
+);
+// СС с учётом индексации = СС последнего года (максимальная, т.к. растёт монотонно)
+const idxSumAssured = computed(() =>
+  idxRows.value.reduce((m, r) => Math.max(m, r.sumAssured || 0), 0)
+);
+const idxBadgeFitOpts = { min: 18, max: 86 };
 
 function fmt(v) { return formatMoney(v) + '\u00A0₸'; }
 
@@ -161,6 +178,7 @@ watch(() => props.result, (r) => {
   animateTo('grossPremium', r.grossPremium);
   animateTo('totalPremium', r.totalPremium ?? r.grossPremium);
   animateTo('annuityPayment', r.annuityPayment ?? 0);
+  animateTo('idxSumAssured', idxSumAssured.value);
   Object.entries(r.riders ?? {}).forEach(([key, rider]) => {
     if ((rider?.riderPremium ?? 0) > 0) {
       animateRider(key, rider.riderPremium ?? 0, rider.riderSum ?? 0);
@@ -172,109 +190,67 @@ watch(() => props.result, (r) => {
 <style scoped>
 .results-summary { display: flex; flex-direction: column; gap: 16px; }
 
-/* Section header — shown only when columns stack (≤1120px) */
+/* Section header — shown only when columns stack (≤1120px).
+   Лёгкий разделитель: зелёная «пилюля» (в стилистике верхних бейджей)
+   с тонкими линиями по бокам — вместо прежнего тяжёлого баннера. */
 .result-section-header { display: none; }
 
 @media (max-width: 1120px) {
   .result-section-header {
-    position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 32px 96px;
-    background: linear-gradient(125deg, #2D5171 0%, #1B344E 55%, #0F1F33 100%);
-    border-radius: 20px;
-    margin: 12px 0;
-    overflow: hidden;
-    animation: rshSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    gap: 14px;
+    margin: 18px 2px 4px;
+    animation: rshSlide 0.4s ease-out both;
   }
-
-  .rsh-icon-wrap {
-    position: absolute;
-    left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 1;
-    width: 54px; height: 54px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #A1C95A 0%, #5C8E2F 100%);
-    display: flex;
+  .rsh-line {
+    flex: 1;
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(to right, transparent, rgba(161, 201, 90, 0.55));
+  }
+  .rsh-line:last-child {
+    background: linear-gradient(to left, transparent, rgba(161, 201, 90, 0.55));
+  }
+  .rsh-chip {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-shadow: 0 6px 20px rgba(121,183,64,0.45),
-                inset 0 1px 0 rgba(255,255,255,0.30);
-    animation: rshIconPulse 2.4s ease-in-out infinite;
+    gap: 8px;
+    padding: 9px 18px;
+    border-radius: 999px;
+    background: linear-gradient(to right, #A1C95A, #5C8E2F);
+    box-shadow: 0 6px 18px rgba(121, 183, 64, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
   .rsh-icon {
-    font-size: 26px;
+    font-size: 16px;
     line-height: 1;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-  }
-  .rsh-content {
-    position: relative;
-    z-index: 1;
-    flex: 1;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    min-width: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
   }
   .rsh-text {
-    font-size: 18px;
-    font-weight: 900;
-    letter-spacing: 0.16em;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: #FFFFFF;
     line-height: 1.15;
-    text-align: center;
-  }
-  .rsh-arrow {
-    font-size: 13px;
-    color: #A1C95A;
-    line-height: 1;
-    flex-shrink: 0;
+    white-space: nowrap;
   }
 }
 @keyframes rshSlide {
-  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes rshIconPulse {
-  0%, 100% { box-shadow: 0 6px 20px rgba(121,183,64,0.45), inset 0 1px 0 rgba(255,255,255,0.30); }
-  50%      { box-shadow: 0 8px 28px rgba(121,183,64,0.65), inset 0 1px 0 rgba(255,255,255,0.40); }
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 480px) {
-  .result-section-header {
-    padding: 20px 56px;
-    border-radius: 16px;
-  }
-  .rsh-icon-wrap {
-    left: 12px;
-    width: 40px; height: 40px;
-    border-radius: 11px;
-  }
-  .rsh-icon { font-size: 20px; }
-  .rsh-content { gap: 6px; }
-  .rsh-text {
-    font-size: 13px;
-    letter-spacing: 0.08em;
-  }
-  .rsh-arrow {
-    font-size: 10px;
-  }
+  .rsh-chip { padding: 8px 14px; gap: 6px; }
+  .rsh-icon { font-size: 14px; }
+  .rsh-text { font-size: 11.5px; letter-spacing: 0.07em; }
 }
 
 @media (max-width: 380px) {
-  .result-section-header {
-    padding: 18px 50px;
-  }
-  .rsh-content { gap: 4px; }
-  .rsh-text { font-size: 11px; letter-spacing: 0.05em; }
-  .rsh-arrow { font-size: 9px; }
+  .result-section-header { gap: 10px; }
+  .rsh-text { font-size: 10.5px; letter-spacing: 0.05em; }
 }
 
 @keyframes fadeInCard {
@@ -346,6 +322,11 @@ watch(() => props.result, (r) => {
 }
 .top-badges.has-annuity .badge-value {
   font-size: 58px;
+}
+/* Бейдж «СС с учётом индексации» — после детализации, один на всю ширину */
+.idx-badges {
+  grid-template-columns: 1fr;
+  animation: fadeInCard 0.45s ease-out both;
 }
 
 /* ── Badge color themes ───────────────── */

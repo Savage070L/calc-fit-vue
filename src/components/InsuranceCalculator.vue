@@ -83,6 +83,7 @@
            :key forces a remount on recalc so the count-up animations re-fire. -->
       <div class="results-section" v-else-if="result && manuallyTriggered" :key="recalcKey">
         <ResultsSummary :result="result" />
+        <IndexationTable :result="result" />
         <ReservesTable :result="result" />
       </div>
 
@@ -102,7 +103,11 @@
           </svg>
         </div>
         <h3 class="ph-title">{{ t('placeholder.title') }}</h3>
-        <p class="ph-subtitle">{{ t('placeholder.subtitle') }}</p>
+        <!-- На десктопе форма слева, на мобильном (колонки в столбик) — выше -->
+        <p class="ph-subtitle">
+          <span class="ph-sub-desktop">{{ t('placeholder.subtitle') }}</span>
+          <span class="ph-sub-mobile">{{ t('placeholder.subtitleMobile') }}</span>
+        </p>
         <ul class="ph-steps">
           <li class="ph-step" :class="{ 'ph-step-done': step1Done }">
             <span class="ph-step-num">{{ step1Done ? '✓' : '1' }}</span>
@@ -150,6 +155,7 @@ import { useInsuranceCalc } from '../composables/useInsuranceCalc.js';
 import InputForm from './InputForm.vue';
 import RidersSection from './RidersSection.vue';
 import ResultsSummary from './ResultsSummary.vue';
+import IndexationTable from './IndexationTable.vue';
 import ReservesTable from './ReservesTable.vue';
 import { useI18n } from '../i18n/index.js';
 
@@ -171,6 +177,9 @@ const formData = ref({
   annuityFrequency: 'annual',
   annuityTerm: 10,
   guaranteedPeriod: 10,
+  // Индексация: ставка фиксированная 6 % годовых (выбора в UI нет), срок = term-1 (авто)
+  enableIndexation: false,
+  indexRate: 6,
   riders: {
     accidental_death:            { enabled: false },
     premium_waiver:              { enabled: false },
@@ -200,11 +209,12 @@ watch(() => formData.value.riders, (val) => {
   if (JSON.stringify(val) !== initialRidersSnapshot) ridersTouched.value = true;
 }, { deep: true });
 
-// Visual hint: once main form is complete and riders are still untouched,
-// highlight the riders card to invite the user to add coverages.
-// Stops pulsing once the user has clicked "Рассчитать".
+// Visual hint: once steps 1-5 are explicitly done (включая ЯВНЫЙ выбор срока —
+// у term есть дефолт, поэтому isFormComplete здесь не годится) and riders
+// are still untouched, highlight the riders card to invite the user to add
+// coverages. Stops pulsing once the user has clicked "Рассчитать".
 const needsRiders = computed(() =>
-  isFormComplete.value && !ridersTouched.value && !manuallyTriggered.value
+  allStepsDone.value && !ridersTouched.value && !manuallyTriggered.value
 );
 
 // User interaction flags (set true only on explicit input completion).
@@ -219,15 +229,16 @@ const step1Done = computed(() => {
   return /^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 1900;
 });
 const step2Done = computed(() => !!formData.value.gender);
-// Step 3: requires the user to finish entering the value (blur / enter).
-const step3Done = computed(() => {
+// Step 3: периодичность взносов.
+const step3Done = computed(() => !!formData.value.frequency);
+// Step 4: сумма взноса — requires the user to finish entering the value (blur / enter).
+const step4Done = computed(() => {
   if (!amountCommitted.value) return false;
   const f = formData.value;
   return f.mode === 'premium_to_sa'
     ? (f.premium > 0)
     : (f.sumAssured > 0);
 });
-const step4Done = computed(() => !!formData.value.frequency);
 // Step 5: requires the user to release the slider OR finish typing in the badge.
 const step5Done = computed(() => termTouched.value && Number(formData.value.term) > 0);
 const step6Done = computed(() => ridersTouched.value);
@@ -276,8 +287,8 @@ const arrowPaths  = ref([]);
 const stepFieldMap = [
   { stepSel: '.ph-steps .ph-step:nth-child(1)', fieldSel: '#dob',                                   done: step1Done },
   { stepSel: '.ph-steps .ph-step:nth-child(2)', fieldSel: '.input-form .form-group .radio-group',  done: step2Done, anchor: 'bottom-center' },
-  { stepSel: '.ph-steps .ph-step:nth-child(3)', fieldSel: '#premium, #sumAssured',                  done: step3Done },
-  { stepSel: '.ph-steps .ph-step:nth-child(4)', fieldSel: '#frequency',                             done: step4Done },
+  { stepSel: '.ph-steps .ph-step:nth-child(3)', fieldSel: '#frequency',                             done: step3Done },
+  { stepSel: '.ph-steps .ph-step:nth-child(4)', fieldSel: '#premium, #sumAssured',                  done: step4Done },
   { stepSel: '.ph-steps .ph-step:nth-child(5)', fieldSel: '.term-slider',                           done: step5Done },
   { stepSel: '.ph-steps .ph-step:nth-child(6)', fieldSel: '.riders-card',                           done: step6Done },
 ];
@@ -835,6 +846,13 @@ watch(result, (r, prev) => {
   text-align: center;
   max-width: 380px;
   line-height: 1.4;
+}
+/* Текст подзаголовка зависит от раскладки: «слева» (две колонки) / «выше»
+   (колонки в столбик, ≤1120px — тот же брейкпоинт, что у result-section-header) */
+.ph-sub-mobile { display: none; }
+@media (max-width: 1120px) {
+  .ph-sub-desktop { display: none; }
+  .ph-sub-mobile  { display: inline; }
 }
 .ph-steps {
   position: relative;

@@ -6,6 +6,7 @@ import { ref, computed } from 'vue';
 import { ActuarialEngine } from '../core/actuarial.js';
 import { PolicyCalculator } from '../core/calculator.js';
 import { RidersCalculator } from '../core/riders.js';
+import { calculateIndexationSchedule } from '../core/indexation.js';
 import { PRODUCT_CONFIG } from '../config/product.js';
 import { useI18n } from '../i18n/index.js';
 
@@ -156,7 +157,7 @@ export function useInsuranceCalc() {
     error.value = null;
 
     try {
-      const { calculator, ridersCalc } = getEngine();
+      const { engine, calculator, ridersCalc } = getEngine();
       const {
         dob,
         gender,
@@ -169,6 +170,8 @@ export function useInsuranceCalc() {
         annuityFrequency = 'annual',
         annuityTerm = 0,
         guaranteedPeriod = 0,
+        enableIndexation = false,
+        indexRate = 6,        // в процентах: 6 == 6 % (ставка фиксированная, выбора в UI нет)
         riders: ridersSelection = {},
         kMult = 1.0,
         lAdd = 0.0,
@@ -286,6 +289,19 @@ export function useInsuranceCalc() {
         return;
       }
 
+      // ─── График индексации (точная модель Vx_m, см. core/indexation.js) ──
+      let indexationSchedule = [];
+      if (enableIndexation && finalSA > 0 && indexRate > 0) {
+        indexationSchedule = calculateIndexationSchedule({
+          dob, gender, term, frequency,
+          initialSumAssured: finalSA,
+          indexRate: indexRate / 100,
+          engine,
+          ridersSelection: allowedRidersSelection,
+          ridersCalc,
+        });
+      }
+
       result.value = {
         ...finalResult,
         riders: finalRidersResult.riders,
@@ -293,6 +309,9 @@ export function useInsuranceCalc() {
         totalPremium,
         maturityAmount,
         annuityPayment: enableAnnuity ? finalResult.annuityPayment : 0,
+        indexationSchedule,
+        enableIndexation,
+        indexRate,
         calcDate: new Date().toISOString().slice(0, 10),
       };
     } catch (e) {
