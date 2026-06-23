@@ -1,13 +1,13 @@
 <template>
-  <div class="reserves-block" v-if="result?.reserves?.length" ref="cardRef">
+  <div class="reserves-block" v-if="result?.reserves?.length || indexed">
     <h3 class="reserves-toggle" @click="showTable = !showTable">
       <span class="icon">📋</span>
-      <span class="reserves-title">{{ t('table.toggle') }}</span>
+      <span class="reserves-title">{{ indexed ? t('table.toggleIndexed') : t('table.toggle') }}</span>
       <InfoTooltip v-bind="tip('table')" />
       <span class="reserves-arrow">{{ showTable ? '▲' : '▼' }}</span>
     </h3>
     <div v-show="showTable" class="reserves-body">
-      <div class="table-wrapper" ref="wrapperRef" :style="wrapperStyle">
+      <div class="table-wrapper">
         <table class="data-table">
           <colgroup>
             <col class="c-year" />
@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { ref, computed } from 'vue';
 import { formatMoney } from '../composables/useInsuranceCalc.js';
 import InfoTooltip from './InfoTooltip.vue';
 import { useI18n } from '../i18n/index.js';
@@ -49,12 +49,28 @@ const props = defineProps({ result: { type: Object, default: null } });
 
 const showTable = ref(window.innerWidth > 720);
 
-// В выкупной таблице 1-й год всегда показываем как 0 ₸ (стандарт продукта).
-const tableRows = computed(() =>
-  (props.result?.reserves ?? []).map((r) =>
-    r.year === 1 ? { ...r, surrender: 0 } : r
-  )
+// Индексация включена и график построен → показываем выкупную «с учётом индексации».
+const indexed = computed(() =>
+  (props.result?.enableIndexation ?? false) && (props.result?.indexationSchedule?.length ?? 0) > 0
 );
+
+// В выкупной таблице 1-й год всегда показываем как 0 ₸ (стандарт продукта).
+//
+// С индексацией: эталон (макрос Final_Stable_Macro_HiddenSheet, новый блок
+// «Данные i» P/Q/R — выкупная по годовщинам) — выкупная на конец полисного
+// года Y берётся из строки графика m = Y−1 (поле surrender; для m=0 = 0,
+// для последнего года = полная индексированная СС — дожитие).
+const tableRows = computed(() => {
+  if (indexed.value) {
+    return props.result.indexationSchedule.map((row, m) => ({
+      year: m + 1,
+      surrender: m === 0 ? 0 : row.surrender,
+    }));
+  }
+  return (props.result?.reserves ?? []).map((r) =>
+    r.year === 1 ? { ...r, surrender: 0 } : r
+  );
+});
 
 function policyDate(yearNum) {
   const base = props.result?.calcDate || new Date().toISOString().slice(0, 10);
@@ -62,80 +78,8 @@ function policyDate(yearNum) {
   return `${d}.${m}.${parseInt(y, 10) + yearNum}`;
 }
 
-// ── Align table bottom with the bottom of the Riders card on the left ──
-const cardRef    = ref(null);
-const wrapperRef = ref(null);
-const maxH       = ref(0);
-
-const wrapperStyle = computed(() => (
-  maxH.value > 0
-    ? { height: maxH.value + 'px', overflowY: 'auto' }
-    : {}
-));
-
-let anchorEl = null;
-let ro = null;
-let rafId = null;
-
-function recompute() {
-  if (typeof window === 'undefined' || window.innerWidth <= 1120) {
-    maxH.value = 0;
-    return;
-  }
-  if (!wrapperRef.value || !anchorEl) return;
-  const wrapRect = wrapperRef.value.getBoundingClientRect();
-  const anchorRect = anchorEl.getBoundingClientRect();
-
-  // Account for any spacing that lives BELOW the table-wrapper but
-  // still above the visual end of the right side (.reserves-block
-  // border + padding, surrounding .results-section bottom-padding, etc.)
-  // so that the right side ends exactly at anchor.bottom, not below it.
-  let bottomBuffer = 0;
-  const block = wrapperRef.value.closest('.reserves-block');
-  if (block) {
-    const bs = getComputedStyle(block);
-    bottomBuffer += (parseFloat(bs.borderBottomWidth) || 0)
-                  + (parseFloat(bs.paddingBottom) || 0);
-  }
-  const section = wrapperRef.value.closest('.results-section');
-  if (section) {
-    const ss = getComputedStyle(section);
-    bottomBuffer += (parseFloat(ss.paddingBottom) || 0)
-                  + (parseFloat(ss.borderBottomWidth) || 0);
-  }
-
-  const avail = Math.max(160, anchorRect.bottom - bottomBuffer - wrapRect.top);
-  maxH.value = avail;
-}
-
-function scheduleRecompute() {
-  if (rafId) cancelAnimationFrame(rafId);
-  rafId = requestAnimationFrame(recompute);
-}
-
-onMounted(() => {
-  nextTick(() => {
-    // Anchor to the Riders card's bottom — that's the visible end of the left-side content.
-    anchorEl = document.querySelector('.riders-card') || document.querySelector('.left-column');
-    if (!anchorEl) return;
-    if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(scheduleRecompute);
-      ro.observe(anchorEl);
-      if (wrapperRef.value) ro.observe(wrapperRef.value);
-    }
-    window.addEventListener('resize', scheduleRecompute);
-    scheduleRecompute();
-  });
-});
-
-onBeforeUnmount(() => {
-  if (ro) ro.disconnect();
-  window.removeEventListener('resize', scheduleRecompute);
-  if (rafId) cancelAnimationFrame(rafId);
-});
-
-watch(showTable, () => nextTick(scheduleRecompute));
-watch(() => props.result, () => nextTick(scheduleRecompute));
+// Таблица показывается целиком, без ограничения высоты и скролла —
+// все строки графика выкупных видны сразу (как и график индексации выше).
 
 function fmt(v) { return formatMoney(v) + '\u00A0₸'; }
 </script>
