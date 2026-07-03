@@ -1,5 +1,7 @@
 <template>
   <div class="riders-section">
+    <p v-if="t('ridersSubtitle')" class="riders-subtitle">{{ t('ridersSubtitle') }}</p>
+
 
     <!-- ── Группа 1: Смерть и инвалидность ─── -->
     <div class="rider-group-label">{{ t('riders.groupDeathDisability') }}</div>
@@ -183,6 +185,13 @@ watch(local, (val) => emit('update:modelValue', { ...val }), { deep: true });
 </script>
 
 <style scoped>
+.riders-subtitle {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-light, #7FB3D3);
+  font-weight: 500;
+}
 .rider-group-label {
   font-size: 15px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.8px;
