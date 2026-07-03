@@ -80,9 +80,9 @@ export default {
   },
 
   riders: {
-    groupDeathDisability: 'ӨЛІМ ЖӘНЕ МҮГЕДЕКТІК',
-    groupTraumaHosp: 'ЖАРАҚАТ ЖӘНЕ АУРУХАНАҒА ЖАТҚЫЗУ',
-    groupCi: 'СЫНДАРЛЫ АУРУЛАР',
+    groupDeathDisability: '',
+    groupTraumaHosp: '',
+    groupCi: '',
     groupExtraInsured: 'ҚОСЫМША САҚТАНДЫРУШЫ',
     accidentalDeath: 'ЖО салдарынан қайтыс болу',
     premiumWaiver: 'ЖО салдарынан I / II топтағы мүгедектік тағайындалған жағдайда сақтандыру сыйақыларын төлеуден босату',

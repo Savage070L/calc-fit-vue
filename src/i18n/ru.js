@@ -80,9 +80,9 @@ export default {
   },
 
   riders: {
-    groupDeathDisability: 'СМЕРТЬ И ИНВАЛИДНОСТЬ',
-    groupTraumaHosp: 'ТРАВМЫ И ГОСПИТАЛИЗАЦИЯ',
-    groupCi: 'КРИТИЧЕСКИЕ ЗАБОЛЕВАНИЯ',
+    groupDeathDisability: '',
+    groupTraumaHosp: '',
+    groupCi: '',
     groupExtraInsured: 'ДОПОЛНИТЕЛЬНЫЙ ЗАСТРАХОВАННЫЙ',
     accidentalDeath: 'Смерть в результате НС',
     premiumWaiver: 'Освобождение от уплаты страховых взносов в случае присвоения инвалидности I / II группы в результате НС',

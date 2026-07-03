@@ -131,8 +131,7 @@ function formatPeriod(r) {
 .ix-wrap {
   /* На десктопе оставляем скролл как резерв, на мобильном — табл.layout=fixed
      и word-break=break-word делают так, что таблица всегда помещается. */
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
   /* Скруглённые углы таблицы (обрезаются вместе с шапкой и строкой «Итого») */
   border-radius: 16px;
 }
