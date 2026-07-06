@@ -4,10 +4,9 @@
       <span class="icon">📋</span>
       <span class="reserves-title">{{ indexed ? t('table.toggleIndexed') : t('table.toggle') }}</span>
       <InfoTooltip v-bind="tip('table')" />
-      <span class="reserves-arrow chev" :class="{ open: showTable }">▼</span>
+      <span class="reserves-arrow">{{ showTable ? '▲' : '▼' }}</span>
     </h3>
-    <SmoothCollapse :show="showTable">
-    <div class="reserves-body">
+    <div v-show="showTable" class="reserves-body">
       <div class="table-wrapper">
         <table class="data-table">
           <colgroup>
@@ -23,12 +22,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="(row, idx) in tableRows"
-              :key="row.year"
-              :class="{ even: idx % 2 === 0 }"
-              :style="{ '--d': Math.min(idx, 16) * 24 + 'ms' }"
-            >
+            <tr v-for="(row, idx) in tableRows" :key="row.year" :class="{ even: idx % 2 === 0 }">
               <td class="col-year">{{ row.year }}</td>
               <td class="col-date">{{ policyDate(row.year) }}</td>
               <td class="col-surrender">
@@ -39,7 +33,6 @@
         </table>
       </div>
     </div>
-    </SmoothCollapse>
   </div>
 </template>
 
@@ -47,7 +40,6 @@
 import { ref, computed } from 'vue';
 import { formatMoney } from '../composables/useInsuranceCalc.js';
 import InfoTooltip from './InfoTooltip.vue';
-import SmoothCollapse from './SmoothCollapse.vue';
 import { useI18n } from '../i18n/index.js';
 
 const { t, tip } = useI18n();
@@ -164,16 +156,10 @@ function fmt(v) { return formatMoney(v) + '\u00A0₸'; }
   background: linear-gradient(135deg, #3D6286, #1B344E);
 }
 
-/* Rows — каскадное появление */
+/* Rows */
 .data-table tbody tr {
   border-bottom: 1px solid rgba(62, 100, 135, 0.1);
   transition: background 0.13s ease;
-  animation: trIn 0.3s ease both;
-  animation-delay: var(--d, 0ms);
-}
-@keyframes trIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 .data-table tbody tr:nth-child(odd) td {
   background: rgba(124, 186, 66, 0.06);
