@@ -4,10 +4,11 @@
       <span class="icon">📈</span>
       <span class="ix-title">{{ t('indexation.title') }}</span>
       <InfoTooltip v-bind="tip('indexationResult')" />
-      <span class="ix-arrow">{{ open ? '▲' : '▼' }}</span>
+      <span class="ix-arrow chev" :class="{ open: open }">▼</span>
     </div>
 
-    <div v-if="open" class="ix-wrap">
+    <SmoothCollapse :show="open">
+    <div class="ix-wrap">
       <table class="data-table ix-table">
         <thead>
           <tr>
@@ -18,7 +19,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(r, idx) in rows" :key="r.year">
+          <tr v-for="(r, idx) in rows" :key="r.year" :style="{ '--d': Math.min(idx, 16) * 24 + 'ms' }">
             <td class="col-num">{{ idx + 1 }}</td>
             <td class="col-date">{{ formatPeriod(r) }}</td>
             <td class="num col-prem">{{ fmt(r.premium) }}</td>
@@ -35,12 +36,14 @@
         </tfoot>
       </table>
     </div>
+    </SmoothCollapse>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
 import InfoTooltip from './InfoTooltip.vue';
+import SmoothCollapse from './SmoothCollapse.vue';
 import { useI18n } from '../i18n/index.js';
 
 const { t, tip } = useI18n();
@@ -162,6 +165,15 @@ function formatPeriod(r) {
 .ix-table tbody tr:nth-child(odd) td { background: rgba(161,201,90,0.07); }
 .ix-table tbody tr:nth-child(even) td { background: rgba(95,189,245,0.05); }
 .ix-table tbody tr:hover td { background: rgba(95,189,245,0.16); }
+/* Каскадное появление строк */
+.ix-table tbody tr {
+  animation: ixTrIn 0.3s ease both;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes ixTrIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 .num { font-family: 'SF Mono', 'Menlo', monospace; }
 .col-num { color: #5FBDF5; font-weight: 700; width: 60px; }
