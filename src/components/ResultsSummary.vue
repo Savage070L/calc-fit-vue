@@ -55,7 +55,7 @@
     <!-- ── СС с учётом индексации (такой же бейдж, как сверху, на всю ширину) ── -->
     <div v-if="hasIndexation" class="top-badges idx-badges">
       <div class="summary-badge badge-sa">
-        <span class="badge-label" v-fit-text="{ min: 9, max: 15 }">{{ t('results.sumAssuredIdx') }} <InfoTooltip v-bind="tip('sumAssuredIdx')" /></span>
+        <span class="badge-label" v-fit-text="{ min: 9, max: 15 }">{{ t('results.sumAssuredIdx') }}</span>
         <span class="badge-value" v-fit-text="idxBadgeFitOpts">{{ fmtTopValue(animated.idxSumAssured) }}</span>
       </div>
     </div>
